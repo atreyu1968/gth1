@@ -1,5 +1,5 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>0652 · UT1 · Gestión de la contratación laboral</title><link rel="stylesheet" href="assets/style.css"></head><body>
-<div id="launchOverlay" class="launch-overlay"><div class="launch-card"><div class="eyebrow">MÓDULO 0652 · GESTIÓN DE RECURSOS HUMANOS</div><h1>UT1 · Gestión de la contratación laboral</h1><p>Teoría completa · 54 actividades interactivas · 36 preguntas de autoevaluación</p><button id="enterBtn" class="btn primary big">Entrar en modo de estudio</button><small>El navegador solicitará pantalla completa. Si tu dispositivo no lo permite, el contenido seguirá funcionando.</small></div></div>
+<div id="launchOverlay" class="launch-overlay"><div class="launch-card"><div class="eyebrow">MÓDULO 0652 · GESTIÓN DE RECURSOS HUMANOS</div><h1>UT1 · Gestión de la contratación laboral</h1><p>Teoría completa · 54 actividades interactivas · 36 preguntas de autoevaluación</p><button id="enterBtn" class="btn primary big" type="button" onclick="window.GTH1_ENTER_STUDY&&window.GTH1_ENTER_STUDY()">Entrar en modo de estudio</button><small>El navegador solicitará pantalla completa. Si tu dispositivo no lo permite, el contenido seguirá funcionando.</small></div></div>
 <div class="app" id="app"><aside class="sidebar"><div class="brand">Gestión de Recursos Humanos</div><div class="unit-tag">UT1 · RA1</div><h2>Gestión de la contratación laboral</h2><div class="nav-group">Inicio</div><button class="nav-btn" data-target="inicio">Presentación</button><button class="nav-btn" data-target="infografias">13 infografías</button><div class="nav-group">Teoría completa</div><button class="nav-btn" data-target="teoria-1">1. La relación laboral
 y su marco jurídico</button><button class="nav-btn" data-target="teoria-2">2. El
 convenio colectivo como herramienta de trabajo</button><button class="nav-btn" data-target="teoria-3">3. El contrato
@@ -1129,6 +1129,26 @@ document.addEventListener('click',()=>contractTip.hidden=true);document.addEvent
 async function recordContractEvidence(id,els,complete){try{const response={};els.forEach(el=>{const key=(el.dataset.contract||'').split(':')[1]||el.name||'campo';response[key]=el.value});const all=complete===els.length,score=els.length?Math.round(complete/els.length*100):0;if(window.parent&&window.parent.EVIDENCE){const ev={kind:'portfolio',ce:'1.g',item_id:'1.g-contract-'+id,response,correct:null,score:all?null:score,payload:{activity:'contract-document',completion_percent:score,fields_total:els.length,fields_completed:complete,review_required:all}};if(all&&window.parent.EVIDENCE.documentEvent)await window.parent.EVIDENCE.documentEvent(ev);else if(window.parent.EVIDENCE.event)await window.parent.EVIDENCE.event({...ev,attempt:1})}}catch(e){console.warn('No se pudo registrar evidencia contractual',e)}}
 document.querySelectorAll('.contract-check').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.check,els=[...document.querySelectorAll('#'+id+' [data-contract]')];let complete=0;els.forEach(el=>{const good=el.value.trim().length>=2;el.classList.toggle('field-ok',good);el.classList.toggle('field-bad',!good);if(good)complete++});const r=document.getElementById(id+'Result'),all=complete===els.length;recordContractEvidence(id,els,complete);r.textContent=all?'✓ Documento cumplimentado: '+complete+'/'+els.length+' campos. Enviado para revisión de coherencia jurídica y documental.':'Faltan datos: '+complete+'/'+els.length+' campos cumplimentados. Usa clic derecho si necesitas orientación.';r.className='feedback '+(all?'ok':'bad')}));
 
+</script><script>
+(function(){
+  function enterStudy(){
+    var overlay=document.getElementById('launchOverlay');
+    if(overlay) overlay.classList.add('hidden');
+    var inicio=document.getElementById('inicio');
+    if(inicio && !document.querySelector('.screen.active')) inicio.classList.add('active');
+    var mode=document.getElementById('mode');
+    if(mode && (!mode.textContent || mode.textContent==='Conectando…')) mode.textContent='Modo autónomo';
+  }
+  function bindStandaloneEntry(){
+    var btn=document.getElementById('enterBtn');
+    if(!btn) return;
+    btn.addEventListener('click', enterStudy, {capture:true});
+    btn.addEventListener('touchend', function(e){ enterStudy(); }, {passive:true,capture:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindStandaloneEntry);
+  else bindStandaloneEntry();
+  window.GTH1_ENTER_STUDY=enterStudy;
+})();
 </script><script src="assets/scorm.js"></script><script>
 (function(){
  const viewer=document.createElement('div');viewer.className='infographic-viewer';viewer.setAttribute('role','dialog');viewer.setAttribute('aria-modal','true');viewer.setAttribute('aria-label','Infografía a pantalla completa');viewer.innerHTML='<button type="button" aria-label="Cerrar infografía">✕ Cerrar</button><img alt=""><span class="hint">Esc o doble clic para cerrar</span>';document.body.appendChild(viewer);
@@ -1140,4 +1160,4 @@ document.querySelectorAll('.contract-check').forEach(btn=>btn.addEventListener('
  let lastTap=0;document.addEventListener('touchend',e=>{const img=e.target.closest('.info-card img,.lesson-body img');if(!img)return;const n=Date.now();if(n-lastTap<450){e.preventDefault();openInfo(img);lastTap=0}else lastTap=n},{passive:false});
  document.querySelectorAll('.info-card img,.lesson-body img').forEach(img=>{img.tabIndex=0;img.title=(img.title?img.title+' · ':'')+'Doble clic para ampliar a pantalla completa';img.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();openInfo(img)}})});
 })();
-</script><script src="../../assets/secure-exam.js"></script><script>window.GRH_SECURE_EXAM?.mount({startId:"startExam",boxId:"examBox",resultId:"examResult"});</script></body></html>
+</script></body></html>
