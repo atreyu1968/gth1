@@ -1131,23 +1131,79 @@ document.querySelectorAll('.contract-check').forEach(btn=>btn.addEventListener('
 
 </script><script>
 (function(){
+  'use strict';
+
+  function activateSection(id, updateHash){
+    var target=document.getElementById(id)||document.getElementById('inicio');
+    if(!target) return false;
+
+    document.querySelectorAll('.screen').forEach(function(el){
+      el.classList.toggle('active', el===target);
+    });
+    document.querySelectorAll('.nav-btn[data-target]').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-target')===target.id);
+    });
+
+    var sidebar=document.querySelector('.sidebar');
+    if(sidebar) sidebar.classList.remove('open');
+
+    if(updateHash!==false){
+      try{ history.replaceState(null,'','#'+target.id); }catch(e){}
+    }
+    try{ window.scrollTo({top:0,left:0,behavior:'instant'}); }
+    catch(e){ window.scrollTo(0,0); }
+    return true;
+  }
+
   function enterStudy(){
     var overlay=document.getElementById('launchOverlay');
     if(overlay) overlay.classList.add('hidden');
-    var inicio=document.getElementById('inicio');
-    if(inicio && !document.querySelector('.screen.active')) inicio.classList.add('active');
+    var requested=(location.hash||'').replace(/^#/,'');
+    activateSection(requested||'inicio', false);
     var mode=document.getElementById('mode');
-    if(mode && (!mode.textContent || mode.textContent==='Conectando…')) mode.textContent='Modo autónomo';
+    if(mode) mode.textContent='Modo autónomo';
   }
-  function bindStandaloneEntry(){
-    var btn=document.getElementById('enterBtn');
+
+  document.addEventListener('click',function(ev){
+    var btn=ev.target.closest && ev.target.closest('[data-target],[data-goto],#menuBtn,#enterBtn');
     if(!btn) return;
-    btn.addEventListener('click', enterStudy, {capture:true});
-    btn.addEventListener('touchend', function(e){ enterStudy(); }, {passive:true,capture:true});
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindStandaloneEntry);
-  else bindStandaloneEntry();
+
+    if(btn.id==='enterBtn'){
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      enterStudy();
+      return;
+    }
+
+    if(btn.id==='menuBtn'){
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      var sidebar=document.querySelector('.sidebar');
+      if(sidebar) sidebar.classList.toggle('open');
+      return;
+    }
+
+    var id=btn.getAttribute('data-target')||btn.getAttribute('data-goto');
+    if(id){
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      activateSection(id,true);
+    }
+  },true);
+
+  window.addEventListener('hashchange',function(){
+    var id=(location.hash||'').replace(/^#/,'');
+    if(id) activateSection(id,false);
+  });
+
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('button:not([type])').forEach(function(btn){btn.type='button';});
+    var id=(location.hash||'').replace(/^#/,'');
+    if(id && document.getElementById(id)) activateSection(id,false);
+  });
+
   window.GTH1_ENTER_STUDY=enterStudy;
+  window.GTH1_NAVIGATE=activateSection;
 })();
 </script><script src="assets/scorm.js"></script><script>
 (function(){
