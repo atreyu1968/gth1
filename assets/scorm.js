@@ -236,23 +236,106 @@ function correctExercise(e,a){
 function installFormativePractice(){
  const first=document.getElementById('pract-1a');if(!first)return;
  const sec=document.createElement('section');sec.className='screen';sec.id='practica-formativa';
- sec.innerHTML='<div class="hero compact"><span class="pill">No evaluable</span><h1>Práctica guiada por criterios</h1><p>Dispones de 3 oportunidades por ejercicio. Tras el tercer intento se muestra la solución orientativa. Estos ejercicios generan evidencia de trabajo, pero no nota.</p></div><div id="formativeBoxes"></div>';
+ sec.innerHTML='<div class="hero compact"><span class="pill">No evaluable</span><h1>Práctica guiada por criterios</h1><p>Dispones de 3 oportunidades por ejercicio. Tras el tercer intento se muestra la solución orientativa. Se conserva el tipo real de cada actividad: test, selección múltiple, verdadero/falso, ordenar y relacionar.</p></div><div id="formativeBoxes"></div>';
  first.parentNode.insertBefore(sec,first);
  const nav=document.querySelector('[data-target="practica-home"]');if(nav){const b=document.createElement('button');b.className='nav-btn';b.dataset.target='practica-formativa';b.textContent='Práctica guiada · 3 intentos';nav.parentNode.insertBefore(b,nav.nextSibling);b.onclick=()=>showScreen('practica-formativa')}
  const host=sec.querySelector('#formativeBoxes');
- CRITERIA.forEach(c=>{const block=document.createElement('div');block.className='card';block.innerHTML='<h2>CE '+safe(c.id)+'</h2><div class="form-list"></div>';host.appendChild(block);const list=block.querySelector('.form-list');
-  (PRACTICE[c.id]||[]).forEach((e,i)=>{const q=document.createElement('article');q.className='exercise';q.innerHTML='<div class="type">Práctica '+(i+1)+' · CE '+safe(c.id)+'</div><h3>'+safe(e.q)+'</h3><div class="fp-options"></div><button class="btn primary fp-check" type="button">Comprobar</button><div class="feedback hidden"></div>';list.appendChild(q);
-   const opts=q.querySelector('.fp-options');let choices=[];
-   if(e.type==='choice')choices=e.options.map((o,j)=>({label:o,value:j,ok:j===e.answer}));
-   else if(e.type==='tf')choices=[{label:'Verdadero',value:true,ok:e.answer===true},{label:'Falso',value:false,ok:e.answer===false}];
-   else {choices=[{label:'He completado el procedimiento propuesto',value:'done',ok:true}]}
-   shuffle(choices).forEach((o,j)=>{const l=document.createElement('label');l.className='option';l.innerHTML='<input type="radio" name="fp-'+e.id+'" value="'+j+'"> '+safe(o.label);l.dataset.ok=o.ok?'1':'0';opts.appendChild(l)});
-   q.querySelector('.fp-check').onclick=async()=>{const chosen=q.querySelector('input:checked');if(!chosen){alert('Selecciona una respuesta.');return}let n=(state.practiceAttempts[e.id]||0)+1;const ev=evidence();let serverId=null;if(ev&&ev.api){const gate=await ev.startAttempt('practice',e.id,{ce:c.id});if(!gate||gate.error){alert('No se puede registrar este intento: '+(gate?.error||'servidor no disponible'));return}n=gate.attempt;serverId=gate.id}state.practiceAttempts[e.id]=n;const lab=chosen.closest('label'),ok=lab.dataset.ok==='1',fb=q.querySelector('.feedback');fb.classList.remove('hidden','ok','bad');fb.classList.add(ok?'ok':'bad');
-    if(ok)fb.innerHTML='<b>Correcto.</b> '+safe(e.feedback||'');else if(n>=3){const sol=Array.from(opts.querySelectorAll('label')).find(x=>x.dataset.ok==='1')?.textContent.trim()||'Consulta la explicación.';fb.innerHTML='<b>Has agotado los 3 intentos.</b> Solución orientativa: '+safe(sol)+'. '+safe(e.feedback||'');q.querySelector('.fp-check').disabled=true}else fb.innerHTML='<b>Respuesta incorrecta.</b> Revisa el contenido. Te quedan '+(3-n)+' intento(s).';
-    try{if(ev&&serverId){await ev.answerAttempt(serverId,lab.textContent.trim(),c.id);await ev.submitAttempt(serverId,{correct:ok})}if(evidence())evidence().event({kind:'practice',ce:c.id,item_id:e.id,attempt:n,response:lab.textContent.trim(),correct:ok,payload:{max_attempts:3}})}catch(x){};sync()
+
+ const sameArray=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const formativeSolution=e=>{
+   if(e.type==='choice')return e.options[e.answer]||'';
+   if(e.type==='tf')return e.answer?'Verdadero':'Falso';
+   if(e.type==='multi')return (e.answer||[]).map(i=>e.options[i]).join(' · ');
+   if(e.type==='order'){const map=Object.fromEntries((e.items||[]).map(x=>[x[0],x[1]]));return (e.answer||[]).map(k=>map[k]||k).join(' → ')}
+   if(e.type==='match')return (e.pairs||[]).map(p=>p[0]+' → '+p[1]).join(' · ');
+   return 'Consulta la explicación.';
+ };
+
+ CRITERIA.forEach(cr=>{
+  const block=document.createElement('div');block.className='card';block.innerHTML='<h2>CE '+safe(cr.id)+'</h2><div class="form-list"></div>';host.appendChild(block);
+  const list=block.querySelector('.form-list');
+
+  (PRACTICE[cr.id]||[]).forEach((e,i)=>{
+   const q=document.createElement('article');q.className='exercise';q.dataset.type=e.type;
+   q.innerHTML='<div class="type">Práctica '+(i+1)+' · CE '+safe(cr.id)+' · '+safe(e.type)+'</div><h3>'+safe(e.q)+'</h3><div class="fp-options"></div><button class="btn primary fp-check" type="button">Comprobar</button><div class="feedback hidden"></div>';
+   list.appendChild(q);
+   const opts=q.querySelector('.fp-options');
+
+   if(e.type==='choice'){
+     shuffle(e.options.map((o,j)=>({label:o,index:j}))).forEach(o=>{
+       const l=document.createElement('label');l.className='option';l.innerHTML='<input type="radio" name="fp-'+e.id+'" value="'+o.index+'"> '+safe(o.label);opts.appendChild(l);
+     });
+   }else if(e.type==='tf'){
+     [{label:'Verdadero',value:'true'},{label:'Falso',value:'false'}].forEach(o=>{
+       const l=document.createElement('label');l.className='option';l.innerHTML='<input type="radio" name="fp-'+e.id+'" value="'+o.value+'"> '+o.label;opts.appendChild(l);
+     });
+   }else if(e.type==='multi'){
+     shuffle(e.options.map((o,j)=>({label:o,index:j}))).forEach(o=>{
+       const l=document.createElement('label');l.className='option';l.innerHTML='<input type="checkbox" name="fp-'+e.id+'" value="'+o.index+'"> '+safe(o.label);opts.appendChild(l);
+     });
+     const hint=document.createElement('p');hint.className='muted';hint.textContent='Puede haber más de una respuesta correcta.';opts.appendChild(hint);
+   }else if(e.type==='order'){
+     const ul=document.createElement('ul');ul.className='order-list';ul.id='fp-order-'+e.id;
+     shuffle(e.items||[]).forEach(it=>{
+       const li=document.createElement('li');li.className='order-item';li.dataset.key=it[0];
+       li.innerHTML='<span>'+safe(it[1])+'</span><button class="move fp-up" type="button" aria-label="Subir">↑</button><button class="move fp-down" type="button" aria-label="Bajar">↓</button>';
+       ul.appendChild(li);
+     });
+     opts.appendChild(ul);
+     ul.addEventListener('click',ev=>{
+       const btn=ev.target.closest('.fp-up,.fp-down');if(!btn)return;ev.preventDefault();
+       const li=btn.closest('li');if(btn.classList.contains('fp-up')&&li.previousElementSibling)ul.insertBefore(li,li.previousElementSibling);
+       if(btn.classList.contains('fp-down')&&li.nextElementSibling)ul.insertBefore(li.nextElementSibling,li);
+     });
+   }else if(e.type==='match'){
+     const rights=(e.pairs||[]).map((p,j)=>({index:j,text:p[1]}));
+     (e.pairs||[]).forEach((p,j)=>{
+       const row=document.createElement('div');row.className='match-row';
+       row.innerHTML='<b>'+safe(p[0])+'</b><select data-match-index="'+j+'"><option value="">Selecciona…</option>'+shuffle(rights).map(r=>'<option value="'+r.index+'">'+safe(r.text)+'</option>').join('')+'</select>';
+       opts.appendChild(row);
+     });
+   }else{
+     opts.innerHTML='<div class="feedback bad">Tipo de actividad no reconocido. No se permite sustituirla por una respuesta única.</div>';
+     q.querySelector('.fp-check').disabled=true;
    }
-  })
- })
+
+   q.querySelector('.fp-check').onclick=async()=>{
+    let answered=true,ok=false,response=null;
+
+    if(e.type==='choice'){
+      const x=q.querySelector('input[type="radio"]:checked');answered=!!x;if(x){response=Number(x.value);ok=response===e.answer}
+    }else if(e.type==='tf'){
+      const x=q.querySelector('input[type="radio"]:checked');answered=!!x;if(x){response=x.value==='true';ok=response===e.answer}
+    }else if(e.type==='multi'){
+      response=Array.from(q.querySelectorAll('input[type="checkbox"]:checked')).map(x=>Number(x.value)).sort((a,b)=>a-b);
+      answered=response.length>0;ok=answered&&sameArray(response,[...(e.answer||[])].sort((a,b)=>a-b));
+    }else if(e.type==='order'){
+      response=Array.from(q.querySelectorAll('.order-item')).map(x=>x.dataset.key);
+      answered=response.length>0;ok=answered&&sameArray(response,e.answer||[]);
+    }else if(e.type==='match'){
+      const sels=Array.from(q.querySelectorAll('select[data-match-index]'));response=sels.map(x=>x.value);
+      answered=sels.length>0&&!response.some(v=>v==='');ok=answered&&response.every((v,j)=>Number(v)===j);
+    }
+
+    if(!answered){alert('Completa la actividad antes de comprobar.');return}
+
+    let n=(state.practiceAttempts[e.id]||0)+1;const ev=evidence();let serverId=null;
+    if(ev&&ev.api){const gate=await ev.startAttempt('practice',e.id,{ce:cr.id});if(!gate||gate.error){alert('No se puede registrar este intento: '+(gate?.error||'servidor no disponible'));return}n=gate.attempt;serverId=gate.id}
+    state.practiceAttempts[e.id]=n;
+
+    const fb=q.querySelector('.feedback');fb.classList.remove('hidden','ok','bad');fb.classList.add(ok?'ok':'bad');
+    if(ok)fb.innerHTML='<b>Correcto.</b> '+safe(e.feedback||'');
+    else if(n>=3){fb.innerHTML='<b>Has agotado los 3 intentos.</b> <strong>Solución orientativa:</strong> '+safe(formativeSolution(e))+'. '+safe(e.feedback||'');q.querySelector('.fp-check').disabled=true}
+    else fb.innerHTML='<b>Respuesta incorrecta.</b> Revisa el contenido. Te quedan '+(3-n)+' intento(s).';
+
+    try{
+      if(ev&&serverId){await ev.answerAttempt(serverId,response,cr.id);await ev.submitAttempt(serverId,{correct:ok})}
+      if(evidence())evidence().event({kind:'practice',ce:cr.id,item_id:e.id,attempt:n,response:response,correct:ok,payload:{max_attempts:3,type:e.type}})
+    }catch(x){}
+    sync();
+   };
+  });
+ });
 }
 async function loadSecurePortfolio(){
  const ev=evidence();if(!ev||!ev.api||!ev.portfolio)return;
