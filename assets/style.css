@@ -99,3 +99,13 @@ body:has(.screen:target) .launch-overlay{display:none}
 
 .case-statement{margin:14px 0 18px;padding:16px 18px;border-left:5px solid var(--teal);background:#f3f8f9;border-radius:10px;line-height:1.58;color:#263b48}
 .case-statement strong{color:var(--navy)}
+
+/* Validación didáctica de contratos */
+.contract-worktime{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.contract-worktime label{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.contract-worktime input{width:auto;margin:0}
+.contract-form .field-ok{border-color:#2f8f5b!important;box-shadow:0 0 0 2px rgba(47,143,91,.14)}
+.contract-form .field-bad{border-color:#b94a48!important;box-shadow:0 0 0 2px rgba(185,74,72,.14)}
+.contract-form .field-review{border-color:#b8860b!important;box-shadow:0 0 0 2px rgba(184,134,11,.14)}
+.feedback.review{background:#fff8df;color:#6e5600}
+.contract-clear{margin:16px 16px 16px 0}
