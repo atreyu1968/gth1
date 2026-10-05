@@ -145,9 +145,10 @@ document.addEventListener('click',function(ev){
  const errors=details.filter(x=>x.state==='bad');
  const sources=details.filter(x=>x.state==='source');
  if(result){
+   const sourceText=source===1?'pendiente de verificar en fuente oficial':'pendientes de verificar en fuente oficial';
    result.className='feedback '+(bad?'bad':source?'review':'ok');
    result.innerHTML='<b>'+(bad?'Revisión necesaria':'Comprobación terminada')+':</b> '
-     +ok+' campos verificados, '+source+' '+SOURCE_LABEL+(source===1?'':'s')+' y '+bad+' con incidencia.'
+     +ok+' campos verificados, '+source+' '+sourceText+' y '+bad+' con incidencia.'
      +(errors.length?'<ul>'+errors.slice(0,10).map(x=>'<li><strong>'+x.label+':</strong> '+x.msg+'</li>').join('')+'</ul>':'')
      +(sources.length?'<p><strong>Pendientes de verificar en fuente oficial:</strong> '+sources.map(x=>x.label).join(', ')+'.</p>':'')
      +'<p class="muted">Las respuestas abiertas se comprueban por palabras y conceptos clave, no por una frase literal. Aun así, los datos que dependen de convenio, SEPE, Seguridad Social o normativa vigente deben contrastarse en la fuente oficial.</p>';
