@@ -1,0 +1,42 @@
+name: Build SCORM Campus ZIP
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate package
+        run: |
+          test -f imsmanifest.xml
+          test -f index.html
+          test -f assets/style.css
+          test -f assets/scorm.js
+          test -f assets/scorm-core.js
+          test -f assets/contract-validator.js
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          ET.parse('imsmanifest.xml')
+          print('imsmanifest.xml OK')
+          PY
+      - name: Create SCORM 1.2 ZIP
+        run: |
+          rm -f GTH_UT1_SCORM12_CAMPUS.zip
+          zip -r GTH_UT1_SCORM12_CAMPUS.zip index.html imsmanifest.xml assets >/dev/null
+          unzip -l GTH_UT1_SCORM12_CAMPUS.zip | head -50
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: GTH-UT1-SCORM12-CAMPUS
+          path: GTH_UT1_SCORM12_CAMPUS.zip
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
